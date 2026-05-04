@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: #f6f2ec;
+  color: #1a1108;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+[title] { cursor: help; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #dbd2c7; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #c0aa90; }
+
+select option { background: #ffffff; color: #1a1108; }
+
+@keyframes card-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); border-color: #dbd2c7; }
+  20%  { box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.35); border-color: #f97316; }
+  60%  { box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15); border-color: #f9a35a; }
+  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); border-color: #dbd2c7; }
+}
+
+.animate-card-flash {
+  animation: card-flash 1.6s ease-out forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.18s ease-out forwards;
+}
