@@ -48,7 +48,8 @@ jobs:
         run: |
           $v = "${{ steps.version.outputs.VERSION }}"
           Copy-Item "src-tauri\target\release\app.exe" "Monfig_v${v}_(portable).exe"
-          Copy-Item "src-tauri\target\release\bundle\nsis\Monfig_${v}_x64-setup.exe" "Monfig_v${v}_(installer).exe"
+          $installer = Get-Item "src-tauri\target\release\bundle\nsis\*-setup.exe" | Select-Object -First 1
+          Copy-Item $installer.FullName "Monfig_v${v}_(installer).exe"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
