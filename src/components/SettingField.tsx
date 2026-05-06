@@ -215,7 +215,7 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
               <ArrayEditor
                 setting={setting}
                 anchorRect={arrayAnchorRef.current.getBoundingClientRect()}
-                onSave={(key, path, value) => emit(value)}
+                onSave={(_key, _path, value) => emit(value)}
                 onClose={() => setArrayEditorOpen(false)}
               />
             )}
