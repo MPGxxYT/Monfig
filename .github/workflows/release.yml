@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Stage release artifacts
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.VERSION }}"
+          Copy-Item "src-tauri\target\release\app.exe" "Monfig_v${v}_(portable).exe"
+          Copy-Item "src-tauri\target\release\bundle\nsis\Monfig_${v}_x64-setup.exe" "Monfig_v${v}_(installer).exe"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Monfig v${{ steps.version.outputs.VERSION }}
+          files: |
+            Monfig_v${{ steps.version.outputs.VERSION }}_(portable).exe
+            Monfig_v${{ steps.version.outputs.VERSION }}_(installer).exe
+          body: |
+            ## Downloads
+
+            | File | Description |
+            |------|-------------|
+            | `Monfig_v${{ steps.version.outputs.VERSION }}_(portable).exe` | Run directly, no install needed (requires WebView2 — pre-installed on Windows 10/11) |
+            | `Monfig_v${{ steps.version.outputs.VERSION }}_(installer).exe` | Standard installer |
