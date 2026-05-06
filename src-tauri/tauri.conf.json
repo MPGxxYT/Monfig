@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Monfig",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.mpgxxyt.monfig",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
