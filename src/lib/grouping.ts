@@ -11,10 +11,13 @@ export function groupFilesByMod(files: { name: string; path: string }[]): ModGro
   const map = new Map<string, ModGroup>()
 
   for (const { name, path } of files) {
-    const baseName = name.replace(/\.[^.]+$/, '')
-    const ext = name.split('.').pop()?.toLowerCase() ?? ''
-    if (!['toml', 'properties', 'cfg', 'conf', 'ini', 'json'].includes(ext)) continue
-    if (name.endsWith('.bak')) continue
+    // `name` may be a relative path for files in subdirectories (e.g. "modname/client.toml")
+    const segments = name.split('/')
+    const leaf = segments[segments.length - 1]
+    const baseName = leaf.replace(/\.[^.]+$/, '')
+    const ext = leaf.split('.').pop()?.toLowerCase() ?? ''
+    if (!['toml', 'properties', 'cfg', 'conf', 'ini', 'json', 'json5'].includes(ext)) continue
+    if (leaf.endsWith('.bak')) continue
 
     let modName = baseName
     let variant: ModFile['variant'] = 'other'
@@ -23,6 +26,14 @@ export function groupFilesByMod(files: { name: string; path: string }[]): ModGro
     if (match) {
       modName = match[1]
       variant = match[3].toLowerCase() as ModFile['variant']
+    }
+
+    if (segments.length > 1) {
+      // Nested files group under their top-level folder
+      modName = segments[0]
+      if (/^(client|server|common)$/i.test(baseName)) {
+        variant = baseName.toLowerCase() as ModFile['variant']
+      }
     }
 
     const file: ModFile = {

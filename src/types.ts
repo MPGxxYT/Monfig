@@ -1,4 +1,4 @@
-export type ConfigFileType = 'toml' | 'properties' | 'cfg' | 'json' | 'unknown'
+export type ConfigFileType = 'toml' | 'properties' | 'cfg' | 'json' | 'json5' | 'unknown'
 export type SettingValueType = 'boolean' | 'integer' | 'float' | 'string' | 'array'
 export type ModVariant = 'client' | 'server' | 'common' | 'other'
 
@@ -21,6 +21,8 @@ export interface ConfigSetting {
   allowedValues: string[] | null
   sectionPath: string[]
   lineIndex: number
+  /** Last line of the value when it spans multiple lines (multi-line TOML arrays); equals lineIndex otherwise. */
+  endLineIndex?: number
 }
 
 export interface ConfigSection {
@@ -80,6 +82,7 @@ export function detectFileType(name: string): ConfigFileType {
     case 'conf':
     case 'ini': return 'cfg'
     case 'json': return 'json'
+    case 'json5': return 'json5'
     default: return 'unknown'
   }
 }

@@ -28,8 +28,8 @@ function truncateNum(n: number, maxLen = 5): string {
 
 interface Props {
   setting: ConfigSetting
-  onChange: (key: string, sectionPath: string[], value: boolean | number | string) => void
-  onReset?: (key: string, sectionPath: string[]) => void
+  onChange: (key: string, sectionPath: string[], value: boolean | number | string, lineIndex?: number) => void
+  onReset?: (key: string, sectionPath: string[], lineIndex?: number) => void
   highlighted?: boolean
 }
 
@@ -62,13 +62,33 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
   }, [highlighted])
 
   function emit(v: boolean | number | string) {
-    onChange(setting.key, setting.sectionPath, v)
+    onChange(setting.key, setting.sectionPath, v, setting.lineIndex)
+  }
+
+  function inRange(n: number): boolean {
+    if (!setting.range) return true
+    const max = isFinite(setting.range.max) ? setting.range.max : Infinity
+    return n >= setting.range.min && n <= max
   }
 
   function handleNumberChange(s: string) {
     setLocalStr(s)
     const n = parseFloat(s)
-    if (!isNaN(n)) emit(n)
+    if (!isNaN(n) && inRange(n)) emit(n)
+  }
+
+  // Clamp/normalize on blur so out-of-range or partial input doesn't linger
+  function commitNumber() {
+    const n = parseFloat(localStr)
+    if (isNaN(n)) { setLocalStr(String(setting.value)); return }
+    let v = n
+    if (setting.range) {
+      const max = isFinite(setting.range.max) ? setting.range.max : Infinity
+      v = Math.min(max, Math.max(setting.range.min, v))
+    }
+    if (setting.valueType === 'integer') v = Math.round(v)
+    if (v !== n) setLocalStr(String(v))
+    if (v !== setting.value) emit(v)
   }
 
   const { valueType, allowedValues, description, defaultValue, range } = setting
@@ -162,6 +182,7 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
                 max={range && isFinite(range.max) ? range.max : undefined}
                 step="any"
                 onChange={(e) => handleNumberChange(e.target.value)}
+                onBlur={commitNumber}
                 className="w-full h-full px-3 text-sm bg-[#eee8e0] text-[#1a1108] font-mono focus:outline-none"
               />
             </div>
@@ -224,7 +245,7 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
 
         {onReset && isChanged && (
           <ResetButton
-            onConfirm={() => onReset(setting.key, setting.sectionPath)}
+            onConfirm={() => onReset(setting.key, setting.sectionPath, setting.lineIndex)}
             className="flex-shrink-0"
           />
         )}

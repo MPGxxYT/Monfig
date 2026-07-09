@@ -6,13 +6,21 @@ export async function pickFolder(): Promise<string | null> {
   return typeof result === 'string' ? result : null
 }
 
-export async function listConfigFiles(dirPath: string): Promise<{ name: string; path: string }[]> {
+const MAX_DEPTH = 3
+
+/** Lists files recursively; `name` is the path relative to the config root ('/' separated). */
+export async function listConfigFiles(dirPath: string, prefix = '', depth = 0): Promise<{ name: string; path: string }[]> {
   const entries = await readDir(dirPath)
   const result: { name: string; path: string }[] = []
 
   for (const entry of entries) {
-    if (!entry.isFile) continue
-    result.push({ name: entry.name, path: `${dirPath}/${entry.name}` })
+    if (entry.isFile) {
+      result.push({ name: prefix + entry.name, path: `${dirPath}/${entry.name}` })
+    } else if (entry.isDirectory && depth < MAX_DEPTH && !entry.name.startsWith('.')) {
+      try {
+        result.push(...await listConfigFiles(`${dirPath}/${entry.name}`, `${prefix}${entry.name}/`, depth + 1))
+      } catch { /* unreadable subdir — skip */ }
+    }
   }
 
   return result

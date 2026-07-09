@@ -20,7 +20,7 @@ interface Props {
   parsedFiles: Map<string, ParsedFile>
   initialQuery?: string
   onClose: () => void
-  onNavigate: (file: ModFile, sectionPath: string[]) => void
+  onNavigate: (result: SearchResult) => void
 }
 
 const VARIANT_COLOR: Record<string, string> = {
@@ -29,11 +29,13 @@ const VARIANT_COLOR: Record<string, string> = {
 
 export function GlobalSearch({ isOpen, isLoading, loadingProgress, parsedFiles, allFiles, initialQuery, onClose, onNavigate }: Props) {
   const [query, setQuery] = useState('')
+  const [selIdx, setSelIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isOpen) {
       setQuery(initialQuery ?? '')
+      setSelIdx(0)
       setTimeout(() => {
         inputRef.current?.focus()
         // Place cursor at end if there's an initial character
@@ -48,6 +50,11 @@ export function GlobalSearch({ isOpen, isLoading, loadingProgress, parsedFiles, 
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
   }, [isOpen, onClose])
+
+  // Keep the keyboard-selected row visible
+  useEffect(() => {
+    document.getElementById(`gs-result-${selIdx}`)?.scrollIntoView({ block: 'nearest' })
+  }, [selIdx])
 
   const results = useMemo<SearchResult[]>(() => {
     const q = query.toLowerCase().trim()
@@ -104,7 +111,19 @@ export function GlobalSearch({ isOpen, isLoading, loadingProgress, parsedFiles, 
               : 'Search all settings in this modpack…'
             }
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setSelIdx(0) }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setSelIdx((i) => Math.min(i + 1, results.length - 1))
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setSelIdx((i) => Math.max(i - 1, 0))
+              } else if (e.key === 'Enter' && results[selIdx]) {
+                onNavigate(results[selIdx])
+                onClose()
+              }
+            }}
             className="flex-1 bg-transparent text-base text-[#1a1108] placeholder-[#a07850] focus:outline-none"
           />
           {query && (
@@ -143,11 +162,17 @@ export function GlobalSearch({ isOpen, isLoading, loadingProgress, parsedFiles, 
                   </span>
                   <span className="text-xs text-[#a07850] ml-auto">{fileResults.length} match{fileResults.length !== 1 ? 'es' : ''}</span>
                 </div>
-                {fileResults.map((r) => (
+                {fileResults.map((r) => {
+                  const idx = results.indexOf(r)
+                  return (
                   <button
                     key={r.settingKey + r.sectionLabel}
-                    onClick={() => { onNavigate(r.file, r.sectionPath); onClose() }}
-                    className="w-full flex items-start gap-4 px-5 py-3 hover:bg-black/[0.03] transition-colors text-left"
+                    id={`gs-result-${idx}`}
+                    onClick={() => { onNavigate(r); onClose() }}
+                    onMouseMove={() => setSelIdx(idx)}
+                    className={`w-full flex items-start gap-4 px-5 py-3 transition-colors text-left ${
+                      idx === selIdx ? 'bg-[#f97316]/10' : 'hover:bg-black/[0.03]'
+                    }`}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -165,7 +190,8 @@ export function GlobalSearch({ isOpen, isLoading, loadingProgress, parsedFiles, 
                       <ArrowRight size={13} className="text-[#a07850]" />
                     </div>
                   </button>
-                ))}
+                  )
+                })}
               </div>
             )
           })}

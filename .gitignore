@@ -25,3 +25,6 @@ dist-ssr
 
 # Files
 assist.md
+
+# Claude Code local state (worktrees, local settings)
+.claude/

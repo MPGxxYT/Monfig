@@ -48,6 +48,12 @@ function ModGroupItem({
   onResetMod: (id: string) => void
   onTogglePin: (id: string) => void
 }) {
+  const isModActive = selectedModId === group.id
+  const isFileActive = group.files.some((f) => f.filePath === selectedFilePath)
+  const isActive = isModActive || isFileActive
+  // Hooks must run unconditionally — keep this above the early return below
+  const [open, setOpen] = useState(isActive)
+
   const visibleFiles = group.files.filter((f) => {
     if (variantFilter !== 'all' && f.variant !== variantFilter) return false
     if (hideEmpty) {
@@ -57,11 +63,6 @@ function ModGroupItem({
     return true
   })
   if (visibleFiles.length === 0) return null
-
-  const isModActive = selectedModId === group.id
-  const isFileActive = group.files.some((f) => f.filePath === selectedFilePath)
-  const isActive = isModActive || isFileActive
-  const [open, setOpen] = useState(isActive)
 
   return (
     <div>
@@ -131,8 +132,11 @@ function ModGroupItem({
                 >
                   {file.variant}
                 </span>
+                <span className="truncate flex-1 text-[11px]">
+                  {file.fileName.split('/').pop()}
+                </span>
                 {count !== undefined && (
-                  <span className="text-[11px] text-[#a07850] ml-auto">{count}</span>
+                  <span className="text-[11px] text-[#a07850]">{count}</span>
                 )}
                 {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-[#e879a0] flex-shrink-0" />}
               </button>

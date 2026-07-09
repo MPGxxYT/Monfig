@@ -10,7 +10,7 @@ If you've ever spent twenty minutes hunting through `.toml` files just to flip o
 
 Point it at a `config/` folder and it shows every setting across every mod in a clean grid with labels, descriptions, default values, and range hints all surfaced from the comments already in the files. No more reading raw TOML by hand.
 
-**Supports:** `.toml`, `.properties`, `.cfg`, `.conf`, `.ini`, `.json`
+**Supports:** `.toml`, `.properties`, `.cfg`, `.conf`, `.ini`, `.json`, `.json5`
 
 ---
 
@@ -67,6 +67,6 @@ Output lands in `src-tauri/target/release/bundle/`.
 
 ## A couple things to know
 
-Monfig only ever writes back to the exact line it changed. It doesn't reformat, reorder, or touch anything else in the file.
+Monfig only ever writes back to the exact line it changed. It doesn't reformat, reorder, or touch anything else in the file. The one exception is plain `.json` files, which are re-serialized on save (key order and indentation are preserved).
 
 Arrays are handled on a best-effort basis. Config formats don't agree on how to write them, so the editor parses what it can and tries to preserve the original format on save. If something looks off, check the raw file.

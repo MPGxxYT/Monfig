@@ -5,9 +5,9 @@ import { Layers } from 'lucide-react'
 interface Props {
   group: ModGroup
   parsedFiles: Map<string, ParsedFile>
-  onChangeSetting: (key: string, sectionPath: string[], value: boolean | number | string) => void
-  onResetSetting: (key: string, sectionPath: string[]) => void
-  onResetSection: (sectionPath: string[]) => void
+  onChangeSetting: (key: string, sectionPath: string[], value: boolean | number | string, filePath?: string, lineIndex?: number) => void
+  onResetSetting: (key: string, sectionPath: string[], filePath?: string, lineIndex?: number) => void
+  onResetSection: (sectionPath: string[], filePath?: string) => void
   onResetFile: (filePath: string) => void
   onOpenFile: (file: ModFile) => void
   highlightedSetting?: HighlightedSetting | null
@@ -50,9 +50,9 @@ export function ModPage({ group, parsedFiles, onChangeSetting, onResetSetting, o
 
             <SettingsPage
               file={parsed}
-              onChangeSetting={onChangeSetting}
-              onResetSetting={onResetSetting}
-              onResetSection={onResetSection}
+              onChangeSetting={(key, path, value, lineIndex) => onChangeSetting(key, path, value, file.filePath, lineIndex)}
+              onResetSetting={(key, path, lineIndex) => onResetSetting(key, path, file.filePath, lineIndex)}
+              onResetSection={(path) => onResetSection(path, file.filePath)}
               onResetFile={() => onResetFile(file.filePath)}
               highlightedSetting={highlightedSetting?.filePath === file.filePath ? highlightedSetting : null}
             />

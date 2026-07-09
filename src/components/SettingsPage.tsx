@@ -7,8 +7,8 @@ import { ResetButton } from './ResetButton'
 
 interface Props {
   file: ParsedFile
-  onChangeSetting: (key: string, sectionPath: string[], value: boolean | number | string) => void
-  onResetSetting: (key: string, sectionPath: string[]) => void
+  onChangeSetting: (key: string, sectionPath: string[], value: boolean | number | string, lineIndex?: number) => void
+  onResetSetting: (key: string, sectionPath: string[], lineIndex?: number) => void
   onResetSection: (sectionPath: string[]) => void
   onResetFile: () => void
   searchQuery?: string

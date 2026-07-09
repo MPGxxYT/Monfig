@@ -6,7 +6,8 @@ function parseItems(rawValue: string): string[] {
   if (!rawValue || rawValue === '[]') return []
   try {
     const parsed = JSON.parse(rawValue)
-    if (Array.isArray(parsed)) return parsed.map(String)
+    // Objects/nested arrays keep their JSON form so round-tripping doesn't mangle them
+    if (Array.isArray(parsed)) return parsed.map((v) => typeof v === 'string' ? v : JSON.stringify(v))
   } catch { /* fall through */ }
   const trimmed = rawValue.replace(/^\[|\]$/g, '').trim()
   if (!trimmed) return []
@@ -14,14 +15,22 @@ function parseItems(rawValue: string): string[] {
 }
 
 function serializeItems(items: string[], originalRaw: string): string {
+  let original: unknown[] = []
   try {
-    const original = JSON.parse(originalRaw)
-    if (Array.isArray(original) && original.length > 0 && typeof original[0] === 'number') {
-      const asNums = items.map(Number)
-      if (asNums.every((n) => !isNaN(n))) return JSON.stringify(asNums)
-    }
+    const parsed = JSON.parse(originalRaw)
+    if (Array.isArray(parsed)) original = parsed
   } catch { /* fall through */ }
-  return JSON.stringify(items)
+
+  const allNumbers = original.length > 0 && original.every((v) => typeof v === 'number')
+  const allStrings = original.length === 0 || original.every((v) => typeof v === 'string')
+
+  const values = items.map((s) => {
+    if (allNumbers) { const n = Number(s); return isNaN(n) ? s : n }
+    if (allStrings) return s
+    // Mixed/object arrays: restore each item's JSON value where possible
+    try { return JSON.parse(s) } catch { return s }
+  })
+  return JSON.stringify(values)
 }
 
 interface Props {
