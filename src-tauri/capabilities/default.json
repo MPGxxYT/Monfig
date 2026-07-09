@@ -16,6 +16,14 @@
     "fs:allow-exists",
     "fs:scope-home-recursive",
     "fs:scope-download-recursive",
-    "fs:scope-applocaldata-recursive"
+    "fs:scope-applocaldata-recursive",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "opener:allow-reveal-item-in-dir",
+      "allow": [{ "path": "**" }]
+    }
   ]
 }

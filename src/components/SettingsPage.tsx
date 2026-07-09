@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
-import { Search, FileX } from 'lucide-react'
+import { Search, FileX, ExternalLink } from 'lucide-react'
 import type { ParsedFile, ConfigSection, HighlightedSetting } from '../types'
 import { isSettingChanged } from '../types'
+import { openFileExternal } from '../lib/fs'
 import { SettingField } from './SettingField'
 import { ResetButton } from './ResetButton'
 
@@ -154,6 +155,13 @@ export const SettingsPage = forwardRef<SettingsPageHandle, Props>(function Setti
       <div className="flex-shrink-0 px-6 pt-5 pb-0 border-b border-[#dbd2c7]">
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-lg font-bold text-[#1a1108]">{file.fileName}</h2>
+          <button
+            onClick={() => { void openFileExternal(file.filePath) }}
+            title="Open file in default editor"
+            className="p-1 rounded text-[#a07850] hover:text-[#f97316] hover:bg-[#f97316]/10 transition-colors"
+          >
+            <ExternalLink size={14} />
+          </button>
           <span className="text-sm text-[#7a5530] bg-[#f6f2ec] border border-[#dbd2c7] rounded-full px-2.5 py-0.5">
             {totalSettings} settings
           </span>

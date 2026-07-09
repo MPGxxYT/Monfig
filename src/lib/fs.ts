@@ -1,5 +1,13 @@
 import { readTextFile, writeTextFile, readDir } from '@tauri-apps/plugin-fs'
 import { open } from '@tauri-apps/plugin-dialog'
+import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
+
+/** Opens the file in its default editor; falls back to revealing it in Explorer
+ *  when the extension has no association. */
+export async function openFileExternal(path: string): Promise<void> {
+  try { await openPath(path) }
+  catch { await revealItemInDir(path) }
+}
 
 export async function pickFolder(): Promise<string | null> {
   const result = await open({ directory: true, multiple: false })

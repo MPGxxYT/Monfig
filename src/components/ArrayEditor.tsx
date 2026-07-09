@@ -33,6 +33,11 @@ function serializeItems(items: string[], originalRaw: string): string {
   return JSON.stringify(values)
 }
 
+function autoGrow(el: HTMLTextAreaElement) {
+  el.style.height = '0px'
+  el.style.height = `${el.scrollHeight + 2}px`
+}
+
 interface Props {
   setting: ConfigSetting
   anchorRect: DOMRect
@@ -61,9 +66,9 @@ export function ArrayEditor({ setting, anchorRect, onSave, onClose }: Props) {
     }
   }, [onClose])
 
-  // Position below the anchor, clamped to viewport
+  // Position below the anchor, clamped to viewport; wide enough to read long entries
   const gap = 6
-  const panelW = 288
+  const panelW = Math.min(Math.max(anchorRect.width, 320), 480)
   const panelMaxH = 320
   const vw = window.innerWidth
   const vh = window.innerHeight
@@ -117,18 +122,19 @@ export function ArrayEditor({ setting, anchorRect, onSave, onClose }: Props) {
             <p className="text-xs text-[#a07850] text-center py-3">No items — add one below</p>
           )}
           {items.map((item, i) => (
-            <div key={i} className="flex items-center gap-1.5">
-              <span className="text-[11px] text-[#c0aa90] w-5 text-right flex-shrink-0 font-mono select-none">{i + 1}</span>
-              <input
-                type="text"
+            <div key={i} className="flex items-start gap-1.5">
+              <span className="text-[11px] text-[#c0aa90] w-5 text-right flex-shrink-0 font-mono select-none pt-2">{i + 1}</span>
+              <textarea
                 value={item}
-                onChange={(e) => updateItem(i, e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') newInputRef.current?.focus() }}
-                className="flex-1 px-2.5 py-1.5 text-sm bg-[#eee8e0] text-[#1a1108] font-mono rounded-lg border border-transparent focus:outline-none focus:border-[#f97316]/50 transition-colors"
+                rows={1}
+                ref={(el) => { if (el) autoGrow(el) }}
+                onChange={(e) => { updateItem(i, e.target.value.replace(/\n/g, '')); autoGrow(e.target) }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); newInputRef.current?.focus() } }}
+                className="flex-1 px-2.5 py-1.5 text-sm bg-[#eee8e0] text-[#1a1108] font-mono rounded-lg border border-transparent focus:outline-none focus:border-[#f97316]/50 transition-colors resize-none overflow-hidden [overflow-wrap:anywhere]"
               />
               <button
                 onClick={() => removeItem(i)}
-                className="flex-shrink-0 text-[#c0aa90] hover:text-[#dc2626] transition-colors p-0.5"
+                className="flex-shrink-0 text-[#c0aa90] hover:text-[#dc2626] transition-colors p-0.5 mt-1.5"
               >
                 <X size={12} />
               </button>

@@ -4,6 +4,7 @@ import type { ConfigSetting } from '../types'
 import { isSettingChanged } from '../types'
 import { ResetButton } from './ResetButton'
 import { ArrayEditor } from './ArrayEditor'
+import { StringEditor } from './StringEditor'
 
 function Tip({ label, children, padClass = 'px-2.5' }: {
   label: string
@@ -35,8 +36,11 @@ interface Props {
 
 export function SettingField({ setting, onChange, onReset, highlighted }: Props) {
   const [localStr, setLocalStr] = useState(String(setting.value))
-  const [arrayEditorOpen, setArrayEditorOpen] = useState(false)
+  // Anchor rects are captured on click (reading refs during render is unsound)
+  const [arrayEditorRect, setArrayEditorRect] = useState<DOMRect | null>(null)
+  const [stringEditorRect, setStringEditorRect] = useState<DOMRect | null>(null)
   const arrayAnchorRef = useRef<HTMLDivElement>(null)
+  const stringAnchorRef = useRef<HTMLDivElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
 
   // Stable id for scroll-to targeting
@@ -206,23 +210,33 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
         )}
 
         {!isBoolean && !isNumber && !hasOptions && !isArray && (
-          <div className="flex-1 flex h-9 rounded-lg border border-[#dbd2c7]">
-            <div className={`flex-1 overflow-hidden ${barLeft}`}>
-              <input
-                type="text"
-                value={localStr}
-                onChange={(e) => { setLocalStr(e.target.value); emit(e.target.value) }}
-                className="w-full h-full px-3 text-sm bg-[#eee8e0] text-[#1a1108] font-mono focus:outline-none"
-              />
-            </div>
+          <div className="flex-1 flex h-9 rounded-lg border border-[#dbd2c7] relative" ref={stringAnchorRef}>
+            <button
+              onClick={() => setStringEditorRect((r) => r ? null : stringAnchorRef.current?.getBoundingClientRect() ?? null)}
+              className={`flex-1 flex items-center gap-2 px-3 text-sm bg-[#eee8e0] rounded-l-lg hover:bg-[#e5ddd5] transition-colors text-left min-w-0 group/str ${rightSection ? '' : 'rounded-r-lg'}`}
+              title="Click to edit"
+            >
+              <span className={`flex-1 font-mono truncate ${String(setting.value) ? 'text-[#1a1108]' : 'text-[#a07850] italic'}`}>
+                {String(setting.value) || 'empty'}
+              </span>
+              <Edit3 size={11} className="text-[#a07850] group-hover/str:text-[#5a3a1a] transition-colors flex-shrink-0" />
+            </button>
             {rightSection}
+            {stringEditorRect && (
+              <StringEditor
+                setting={setting}
+                anchorRect={stringEditorRect}
+                onSave={(value) => emit(value)}
+                onClose={() => setStringEditorRect(null)}
+              />
+            )}
           </div>
         )}
 
         {isArray && (
           <div className="flex-1 flex h-9 rounded-lg border border-[#dbd2c7] relative" ref={arrayAnchorRef}>
             <button
-              onClick={() => setArrayEditorOpen((o) => !o)}
+              onClick={() => setArrayEditorRect((r) => r ? null : arrayAnchorRef.current?.getBoundingClientRect() ?? null)}
               className={`flex-1 flex items-center gap-2 px-3 text-sm bg-[#eee8e0] rounded-l-lg hover:bg-[#e5ddd5] transition-colors text-left group/arr ${rightSection ? '' : 'rounded-r-lg'}`}
               title="Click to edit array"
             >
@@ -232,12 +246,12 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
               <Edit3 size={11} className="text-[#a07850] group-hover/arr:text-[#5a3a1a] transition-colors flex-shrink-0" />
             </button>
             {rightSection}
-            {arrayEditorOpen && arrayAnchorRef.current && (
+            {arrayEditorRect && (
               <ArrayEditor
                 setting={setting}
-                anchorRect={arrayAnchorRef.current.getBoundingClientRect()}
+                anchorRect={arrayEditorRect}
                 onSave={(_key, _path, value) => emit(value)}
-                onClose={() => setArrayEditorOpen(false)}
+                onClose={() => setArrayEditorRect(null)}
               />
             )}
           </div>
