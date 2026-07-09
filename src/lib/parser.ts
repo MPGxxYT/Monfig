@@ -77,7 +77,20 @@ function extractMeta(comments: string[]): Pick<ConfigSetting, 'description' | 'd
     if (rangeMinM) { range = { min: parseFloat(rangeMinM[1]), max: Infinity }; continue }
 
     const allowedM = line.match(/^(?:Allowed Values|Possible values):\s*(.+)/i)
-    if (allowedM) { allowedValues = allowedM[1].split(',').map((v) => v.trim()); continue }
+    if (allowedM) {
+      const spec = allowedM[1].trim()
+      // Interval notation like "(0,)", "[1, 64]", "(,5]" is a range, not an enum
+      const intervalM = spec.match(/^[([]\s*(-?[\d.eE+]+)?\s*,\s*(-?[\d.eE+]+)?\s*[)\]]$/)
+      if (intervalM) {
+        range = {
+          min: intervalM[1] !== undefined ? parseFloat(intervalM[1]) : -Infinity,
+          max: intervalM[2] !== undefined ? parseFloat(intervalM[2]) : Infinity,
+        }
+      } else {
+        allowedValues = spec.split(',').map((v) => v.trim()).filter(Boolean)
+      }
+      continue
+    }
 
     // Old-Forge inline style: "Description [range: 0.0 ~ 1.0, default: 0.5]"
     const inlineRange = line.match(/\[range:\s*(-?[\d.eE+]+)\s*~\s*(-?[\d.eE+]+)/i)

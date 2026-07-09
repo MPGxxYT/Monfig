@@ -22,7 +22,7 @@ function Tip({ label, children, padClass = 'px-2.5' }: {
 }
 
 function truncateNum(n: number, maxLen = 5): string {
-  if (!isFinite(n)) return '∞'
+  if (!isFinite(n)) return n < 0 ? '-∞' : '∞'
   const s = String(n)
   return s.length > maxLen ? s.slice(0, maxLen) + '…' : s
 }
@@ -103,11 +103,12 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
   const isChanged = isSettingChanged(setting)
 
   const rangeInfo = range ? (() => {
-    const minStr = String(range.min)
+    const minFull = isFinite(range.min) ? String(range.min) : '-∞'
     const maxFull = isFinite(range.max) ? String(range.max) : '∞'
-    const maxShort = truncateNum(isFinite(range.max) ? range.max : Infinity)
-    const truncated = maxShort !== maxFull
-    return { display: `${minStr} – ${maxShort}`, full: `${minStr} – ${maxFull}`, truncated }
+    const minShort = truncateNum(range.min)
+    const maxShort = truncateNum(range.max)
+    const truncated = minShort !== minFull || maxShort !== maxFull
+    return { display: `${minShort} – ${maxShort}`, full: `${minFull} – ${maxFull}`, truncated }
   })() : null
 
   const rightSection = (rangeInfo || defaultValue) ? (
@@ -137,11 +138,11 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
     <div
       id={settingId}
       ref={cardRef}
-      className="bg-white border border-[#dbd2c7] rounded-xl p-4 flex flex-col gap-3 hover:border-[#c0aa90] hover:shadow-sm transition-all"
+      className="bg-white border border-[#dbd2c7] rounded-xl p-4 flex flex-col gap-3 hover:border-[#c0aa90] hover:shadow-sm transition-all min-w-0"
     >
       {/* Title + description */}
       <div className="flex-1">
-        <p title={setting.key} className="text-[15px] font-bold text-[#1a1108] leading-snug">
+        <p title={setting.key} className="text-[15px] font-bold text-[#1a1108] leading-snug break-words">
           {setting.label}
         </p>
         {description && (
@@ -152,7 +153,7 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
       </div>
 
       {/* Controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 min-w-0">
 
         {isBoolean && (
           <>
@@ -182,7 +183,7 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
               <input
                 type="number"
                 value={localStr}
-                min={range?.min}
+                min={range && isFinite(range.min) ? range.min : undefined}
                 max={range && isFinite(range.max) ? range.max : undefined}
                 step="any"
                 onChange={(e) => handleNumberChange(e.target.value)}
@@ -210,7 +211,7 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
         )}
 
         {!isBoolean && !isNumber && !hasOptions && !isArray && (
-          <div className="flex-1 flex h-9 rounded-lg border border-[#dbd2c7] relative" ref={stringAnchorRef}>
+          <div className="flex-1 flex h-9 rounded-lg border border-[#dbd2c7] relative min-w-0" ref={stringAnchorRef}>
             <button
               onClick={() => setStringEditorRect((r) => r ? null : stringAnchorRef.current?.getBoundingClientRect() ?? null)}
               className={`flex-1 flex items-center gap-2 px-3 text-sm bg-[#eee8e0] rounded-l-lg hover:bg-[#e5ddd5] transition-colors text-left min-w-0 group/str ${rightSection ? '' : 'rounded-r-lg'}`}
@@ -234,7 +235,7 @@ export function SettingField({ setting, onChange, onReset, highlighted }: Props)
         )}
 
         {isArray && (
-          <div className="flex-1 flex h-9 rounded-lg border border-[#dbd2c7] relative" ref={arrayAnchorRef}>
+          <div className="flex-1 flex h-9 rounded-lg border border-[#dbd2c7] relative min-w-0" ref={arrayAnchorRef}>
             <button
               onClick={() => setArrayEditorRect((r) => r ? null : arrayAnchorRef.current?.getBoundingClientRect() ?? null)}
               className={`flex-1 flex items-center gap-2 px-3 text-sm bg-[#eee8e0] rounded-l-lg hover:bg-[#e5ddd5] transition-colors text-left group/arr ${rightSection ? '' : 'rounded-r-lg'}`}
