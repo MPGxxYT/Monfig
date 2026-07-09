@@ -105,8 +105,8 @@ export function OverlayPanel({ title, anchorRect, initialWidth, onClose, footer,
         {/* Header — drag to move */}
         <div
           onMouseDown={startDrag}
-          title="Drag to move"
-          className="flex items-center gap-2 px-3.5 py-2.5 border-b border-[#dbd2c7] cursor-move select-none flex-shrink-0"
+          className="flex items-center gap-2 px-3.5 py-2.5 border-b border-[#dbd2c7] select-none flex-shrink-0"
+          style={{ cursor: 'move' }}
         >
           <span className="text-sm font-semibold text-[#1a1108] flex-1 truncate">{title}</span>
           <button
