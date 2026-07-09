@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { X } from 'lucide-react'
 import type { ConfigSetting } from '../types'
+import { OverlayPanel } from './OverlayPanel'
 
 function autoGrow(el: HTMLTextAreaElement) {
   el.style.height = '0px'
@@ -16,23 +16,7 @@ interface Props {
 
 export function StringEditor({ setting, anchorRect, onSave, onClose }: Props) {
   const [value, setValue] = useState(String(setting.value))
-  const panelRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    const onMouseDown = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose()
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('mousedown', onMouseDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [onClose])
 
   // Focus with the cursor at the end, sized to fit the content
   useEffect(() => {
@@ -43,16 +27,20 @@ export function StringEditor({ setting, anchorRect, onSave, onClose }: Props) {
     autoGrow(el)
   }, [])
 
-  // Position below the anchor, clamped to viewport
-  const gap = 6
-  const panelW = Math.min(Math.max(anchorRect.width, 300), 480)
-  const estH = 150
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  const top = anchorRect.bottom + gap + estH > vh
-    ? Math.max(8, anchorRect.top - estH - gap)
-    : anchorRect.bottom + gap
-  const left = Math.min(Math.max(8, anchorRect.left), vw - panelW - 8)
+  // Re-fit when the panel is resized horizontally
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    let lastW = el.clientWidth
+    const ro = new ResizeObserver(() => {
+      if (el.clientWidth !== lastW) {
+        lastW = el.clientWidth
+        autoGrow(el)
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   function handleSave() {
     onSave(value)
@@ -60,37 +48,12 @@ export function StringEditor({ setting, anchorRect, onSave, onClose }: Props) {
   }
 
   return (
-    <>
-      {/* Click-away backdrop */}
-      <div className="fixed inset-0 z-40" />
-
-      <div
-        ref={panelRef}
-        className="fixed z-50 bg-white border border-[#dbd2c7] rounded-xl shadow-2xl flex flex-col"
-        style={{ top, left, width: panelW }}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-[#dbd2c7]">
-          <span className="text-sm font-semibold text-[#1a1108] flex-1 truncate">{setting.label}</span>
-          <button onClick={onClose} className="text-[#a07850] hover:text-[#1a1108] transition-colors p-0.5">
-            <X size={13} />
-          </button>
-        </div>
-
-        {/* Value */}
-        <div className="px-2 pt-2">
-          <textarea
-            ref={textareaRef}
-            value={value}
-            rows={1}
-            onChange={(e) => { setValue(e.target.value.replace(/\n/g, '')); autoGrow(e.target) }}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSave() } }}
-            className="w-full px-2.5 py-1.5 text-sm bg-[#eee8e0] text-[#1a1108] font-mono rounded-lg border border-transparent focus:outline-none focus:border-[#f97316]/50 transition-colors resize-none overflow-hidden [overflow-wrap:anywhere]"
-            style={{ maxHeight: 220 }}
-          />
-        </div>
-
-        {/* Actions */}
+    <OverlayPanel
+      title={setting.label}
+      anchorRect={anchorRect}
+      initialWidth={Math.min(Math.max(anchorRect.width, 300), 480)}
+      onClose={onClose}
+      footer={
         <div className="flex gap-2 px-2 pt-1.5 pb-2">
           <button
             onClick={onClose}
@@ -105,7 +68,18 @@ export function StringEditor({ setting, anchorRect, onSave, onClose }: Props) {
             Save
           </button>
         </div>
+      }
+    >
+      <div className="px-2 pt-2 pb-1">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          rows={1}
+          onChange={(e) => { setValue(e.target.value.replace(/\n/g, '')); autoGrow(e.target) }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSave() } }}
+          className="w-full px-2.5 py-1.5 text-sm bg-[#eee8e0] text-[#1a1108] font-mono rounded-lg border border-transparent focus:outline-none focus:border-[#f97316]/50 transition-colors resize-none overflow-hidden [overflow-wrap:anywhere]"
+        />
       </div>
-    </>
+    </OverlayPanel>
   )
 }

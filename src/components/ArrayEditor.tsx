@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
 import type { ConfigSetting } from '../types'
+import { OverlayPanel } from './OverlayPanel'
 
 function parseItems(rawValue: string): string[] {
   if (!rawValue || rawValue === '[]') return []
@@ -48,34 +49,23 @@ interface Props {
 export function ArrayEditor({ setting, anchorRect, onSave, onClose }: Props) {
   const [items, setItems] = useState<string[]>(() => parseItems(setting.rawValue))
   const [newItem, setNewItem] = useState('')
-  const panelRef = useRef<HTMLDivElement>(null)
   const newInputRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
+  // Re-fit item textareas when the panel is resized horizontally
   useEffect(() => {
-    const onMouseDown = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose()
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('mousedown', onMouseDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [onClose])
-
-  // Position below the anchor, clamped to viewport; wide enough to read long entries
-  const gap = 6
-  const panelW = Math.min(Math.max(anchorRect.width, 320), 480)
-  const panelMaxH = 320
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  const top = anchorRect.bottom + gap + panelMaxH > vh
-    ? Math.max(8, anchorRect.top - panelMaxH - gap)
-    : anchorRect.bottom + gap
-  const left = Math.min(Math.max(8, anchorRect.left), vw - panelW - 8)
+    const el = listRef.current
+    if (!el) return
+    let lastW = el.clientWidth
+    const ro = new ResizeObserver(() => {
+      if (el.clientWidth !== lastW) {
+        lastW = el.clientWidth
+        el.querySelectorAll('textarea').forEach((t) => autoGrow(t))
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   function addItem() {
     const v = newItem.trim()
@@ -99,50 +89,12 @@ export function ArrayEditor({ setting, anchorRect, onSave, onClose }: Props) {
   }
 
   return (
-    <>
-      {/* Click-away backdrop */}
-      <div className="fixed inset-0 z-40" />
-
-      <div
-        ref={panelRef}
-        className="fixed z-50 bg-white border border-[#dbd2c7] rounded-xl shadow-2xl flex flex-col"
-        style={{ top, left, width: panelW }}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-[#dbd2c7]">
-          <span className="text-sm font-semibold text-[#1a1108] flex-1 truncate">{setting.label}</span>
-          <button onClick={onClose} className="text-[#a07850] hover:text-[#1a1108] transition-colors p-0.5">
-            <X size={13} />
-          </button>
-        </div>
-
-        {/* Item list */}
-        <div className="overflow-y-auto px-2 py-2 space-y-1.5" style={{ maxHeight: 200 }}>
-          {items.length === 0 && (
-            <p className="text-xs text-[#a07850] text-center py-3">No items — add one below</p>
-          )}
-          {items.map((item, i) => (
-            <div key={i} className="flex items-start gap-1.5">
-              <span className="text-[11px] text-[#c0aa90] w-5 text-right flex-shrink-0 font-mono select-none pt-2">{i + 1}</span>
-              <textarea
-                value={item}
-                rows={1}
-                ref={(el) => { if (el) autoGrow(el) }}
-                onChange={(e) => { updateItem(i, e.target.value.replace(/\n/g, '')); autoGrow(e.target) }}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); newInputRef.current?.focus() } }}
-                className="flex-1 px-2.5 py-1.5 text-sm bg-[#eee8e0] text-[#1a1108] font-mono rounded-lg border border-transparent focus:outline-none focus:border-[#f97316]/50 transition-colors resize-none overflow-hidden [overflow-wrap:anywhere]"
-              />
-              <button
-                onClick={() => removeItem(i)}
-                className="flex-shrink-0 text-[#c0aa90] hover:text-[#dc2626] transition-colors p-0.5 mt-1.5"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* Add new item */}
+    <OverlayPanel
+      title={setting.label}
+      anchorRect={anchorRect}
+      initialWidth={Math.min(Math.max(anchorRect.width, 320), 480)}
+      onClose={onClose}
+      footer={
         <div className="px-2 pt-1.5 pb-2 border-t border-[#dbd2c7] space-y-2">
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] text-[#c0aa90] w-5 text-right flex-shrink-0 font-mono select-none">+</span>
@@ -179,7 +131,32 @@ export function ArrayEditor({ setting, anchorRect, onSave, onClose }: Props) {
             </button>
           </div>
         </div>
+      }
+    >
+      <div ref={listRef} className="px-2 py-2 space-y-1.5">
+        {items.length === 0 && (
+          <p className="text-xs text-[#a07850] text-center py-3">No items — add one below</p>
+        )}
+        {items.map((item, i) => (
+          <div key={i} className="flex items-start gap-1.5">
+            <span className="text-[11px] text-[#c0aa90] w-5 text-right flex-shrink-0 font-mono select-none pt-2">{i + 1}</span>
+            <textarea
+              value={item}
+              rows={1}
+              ref={(el) => { if (el) autoGrow(el) }}
+              onChange={(e) => { updateItem(i, e.target.value.replace(/\n/g, '')); autoGrow(e.target) }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); newInputRef.current?.focus() } }}
+              className="flex-1 px-2.5 py-1.5 text-sm bg-[#eee8e0] text-[#1a1108] font-mono rounded-lg border border-transparent focus:outline-none focus:border-[#f97316]/50 transition-colors resize-none overflow-hidden [overflow-wrap:anywhere]"
+            />
+            <button
+              onClick={() => removeItem(i)}
+              className="flex-shrink-0 text-[#c0aa90] hover:text-[#dc2626] transition-colors p-0.5 mt-1.5"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
       </div>
-    </>
+    </OverlayPanel>
   )
 }
